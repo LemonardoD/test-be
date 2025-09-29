@@ -1,0 +1,43 @@
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+
+const app = new Hono();
+app.use(cors({ origin: "*" }));
+
+app.get("/events", (c) => {
+  const queryData = c.req.query("data");
+
+  if (!queryData) return c.json({ message: "ok" });
+
+  const onePixelPNG = new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+    0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+  ]);
+
+  // Success: return 1x1 transparent PNG so img.onload fires
+  return c.body(onePixelPNG, 200, {
+    "Content-Type": "image/png",
+    "Content-Length": String(onePixelPNG.length),
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0"
+  });
+});
+
+app.post("/events", async (c) => {
+  const body = await c.req.json();
+  console.log(body);
+  return c.text("Hello Hono!");
+});
+
+serve(
+  {
+    fetch: app.fetch,
+    port: 3000
+  },
+  (info) => {
+    console.log(`Server is running on http://localhost:${info.port}`);
+  }
+);
